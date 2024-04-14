@@ -1,32 +1,47 @@
 import { Request, Response } from "express";
 
 import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
-import { TodoRepository } from "../../domain";
+import {
+  GetAllTodosUseCaseImpl,
+  GetTodoByIdUseCaseImpl,
+  CreateTodoUseCaseImpl,
+  UpdateTodoUseCaseImpl,
+  DeleteTodoUseCaseImpl,
+  TodoRepository,
+} from "../../domain";
 
 export class TodosController {
   constructor(private readonly todoRepository: TodoRepository) {}
 
-  public getTodos = async (req: Request, res: Response) => {
-    const todos = await this.todoRepository.getAll();
-    return res.json(todos);
+  public getTodos = (req: Request, res: Response) => {
+    new GetAllTodosUseCaseImpl(this.todoRepository)
+      .execute()
+      .then((todos) => {
+        return res.json(todos);
+      })
+      .catch((error: any) => {
+        return res.status(500).json({ message: error.message });
+      });
   };
 
-  public getTodoById = async (req: Request, res: Response) => {
+  public getTodoById = (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
 
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid id" });
     }
 
-    try {
-      const todo = await this.todoRepository.getById(id);
-      return res.json(todo);
-    } catch (error: any) {
-      return res.status(404).json({ message: "Todo not found" });
-    }
+    new GetTodoByIdUseCaseImpl(this.todoRepository)
+      .execute(id)
+      .then((todo) => {
+        return res.json(todo);
+      })
+      .catch((error: any) => {
+        return res.status(404).json({ message: error.message });
+      });
   };
 
-  public createTodo = async (req: Request, res: Response) => {
+  public createTodo = (req: Request, res: Response) => {
     const [error, createTodoDto] = CreateTodoDto.create(req.body);
 
     if (error) {
@@ -37,12 +52,17 @@ export class TodosController {
       return res.status(500).json({ message: "Failed to create todo" });
     }
 
-    const newTodo = await this.todoRepository.create(createTodoDto);
-
-    return res.status(201).json(newTodo);
+    new CreateTodoUseCaseImpl(this.todoRepository)
+      .execute(createTodoDto)
+      .then((todo) => {
+        return res.json(todo);
+      })
+      .catch((error: any) => {
+        return res.status(500).json({ message: error.message });
+      });
   };
 
-  public updateTodo = async (req: Request, res: Response) => {
+  public updateTodo = (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
 
     if (isNaN(id)) {
@@ -59,26 +79,30 @@ export class TodosController {
       return res.status(500).json({ message: "Failed to update todo" });
     }
 
-    try {
-      const updatedTodo = await this.todoRepository.update(id, updateTodoDto);
-      return res.json(updatedTodo);
-    } catch (error: any) {
-      return res.status(404).json({ message: error.message });
-    }
+    new UpdateTodoUseCaseImpl(this.todoRepository)
+      .execute(id, updateTodoDto)
+      .then((todo) => {
+        return res.json(todo);
+      })
+      .catch((error: any) => {
+        return res.status(404).json({ message: error.message });
+      });
   };
 
-  public deleteTodo = async (req: Request, res: Response) => {
+  public deleteTodo = (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
 
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid id" });
     }
 
-    try {
-      const deleted = await this.todoRepository.delete(id);
-      return res.json(deleted);
-    } catch (error: any) {
-      return res.status(404).json({ message: error.message });
-    }
+    new DeleteTodoUseCaseImpl(this.todoRepository)
+      .execute(id)
+      .then((deletedTodo) => {
+        return res.json(deletedTodo);
+      })
+      .catch((error: any) => {
+        return res.status(404).json({ message: error.message });
+      });
   };
 }
