@@ -55,7 +55,7 @@ export class TodosController {
     new CreateTodoUseCaseImpl(this.todoRepository)
       .execute(createTodoDto)
       .then((todo) => {
-        return res.json(todo);
+        return res.status(201).json(todo);
       })
       .catch((error: any) => {
         return res.status(500).json({ message: error.message });
